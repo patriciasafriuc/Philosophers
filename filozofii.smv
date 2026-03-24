@@ -1,0 +1,120 @@
+MODULE Philosopher(left_fork, right_fork, id, turn)
+VAR 
+    state: {thinking, eating};
+
+ASSIGN
+    init(state) := thinking;
+
+    next(state) :=
+             case
+                     state = thinking & left_fork = ready & right_fork = ready & id = turn : eating;
+                     state = eating : thinking;
+                     TRUE: state;
+             esac;
+
+
+
+MODULE main
+VAR 
+    fork0 : {ready, busy};
+    fork1 : {ready, busy};
+    fork2 : {ready, busy};
+    fork3 : {ready, busy};
+    fork4 : {ready, busy};
+
+    turn : 0..4;  -- Track the philosopher’s turn
+
+    philosopher0 : Philosopher (fork0, fork1, 0, turn);
+    philosopher1 : Philosopher (fork1, fork2, 1, turn);
+    philosopher2 : Philosopher (fork2, fork3, 2, turn);
+    philosopher3 : Philosopher (fork3, fork4, 3, turn);
+    philosopher4 : Philosopher (fork4, fork0, 4, turn);
+
+ASSIGN
+    init(fork0) := ready;
+    init(fork1) := ready;
+    init(fork2) := ready;
+    init(fork3) := ready;
+    init(fork4) := ready;
+
+    init(turn) := 0;  -- Start with philosopher 0’s turn
+
+    next(fork0) :=
+             case
+                     philosopher0.state = eating : busy;
+                     philosopher4.state = eating : busy;
+                     TRUE : ready;
+             esac;
+
+    next(fork1) :=
+             case
+                     philosopher0.state = eating : busy;
+                     philosopher1.state = eating : busy;
+                     TRUE : ready;
+             esac;
+
+    next(fork2) :=
+             case
+                     philosopher1.state = eating : busy;
+                     philosopher2.state = eating : busy;
+                     TRUE : ready;
+             esac;
+    
+    next(fork3) :=
+             case
+                     philosopher2.state = eating : busy;
+                     philosopher3.state = eating : busy;
+                     TRUE : ready;
+             esac;
+    
+    next(fork4) :=
+             case
+                     philosopher3.state = eating : busy;
+                     philosopher4.state = eating : busy;
+                     TRUE : ready;
+             esac;
+
+     next(turn) := 
+        case
+            philosopher0.state = eating : 1;
+            philosopher1.state = eating : 2;
+            philosopher2.state = eating : 3;
+            philosopher3.state = eating : 4;
+            philosopher4.state = eating : 0;
+            TRUE : turn;
+        esac;
+
+
+
+
+
+SPEC AG !(philosopher0.state = eating & philosopher1.state = eating)
+
+LTLSPEC G (philosopher0.state = thinking -> F philosopher0.state = eating)
+
+LTLSPEC G (philosopher0.state = thinking -> F philosopher0.state = eating) &
+         G (philosopher1.state = thinking -> F philosopher1.state = eating) &
+         G (philosopher2.state = thinking -> F philosopher2.state = eating) &
+         G (philosopher3.state = thinking -> F philosopher3.state = eating) &
+         G (philosopher4.state = thinking -> F philosopher4.state = eating)
+
+SPEC AG (philosopher0.state = thinking -> AF (philosopher0.state = eating));
+SPEC EG (philosopher0.state = thinking -> AF (philosopher0.state = eating));
+SPEC EX (philosopher0.state = thinking -> AF (philosopher0.state = eating));
+
+
+SPEC AG (philosopher3.state = eating -> AF (philosopher3.state = thinking));
+SPEC EG (philosopher3.state = eating -> AF (philosopher3.state = thinking));
+SPEC EX (philosopher3.state = eating -> AF (philosopher3.state = thinking));
+
+-- Ensure that philosophers always get a chance to eat
+-- LTLSPEC G (philosopher0.state = thinking -> F philosopher0.state = eating);
+-- LTLSPEC G (philosopher1.state = thinking -> F philosopher1.state = eating);
+-- LTLSPEC G (philosopher2.state = thinking -> F philosopher2.state = eating);
+-- LTLSPEC G (philosopher3.state = thinking -> F philosopher3.state = eating);
+-- LTLSPEC G (philosopher4.state = thinking -> F philosopher4.state = eating);
+-- LTLSPEC G (philosopher4.state = eating -> F philosopher4.state = thinking);
+
+
+
+-- NuSMV filozofii.smv
